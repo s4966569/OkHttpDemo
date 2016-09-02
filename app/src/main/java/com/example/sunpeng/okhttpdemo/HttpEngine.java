@@ -90,7 +90,7 @@ public class HttpEngine {
      * @param callBack
      * @throws IOException
      */
-    public void doPost(String url,Object requestObj,final HttpCallBack callBack) throws IOException {
+      public void doPost(String url,Object requestObj,final HttpCallBack callBack) throws IOException {
         RequestBody requestBody = createRequestBody(requestObj);
         Request request = new Request.Builder().url(url).post(requestBody).build();
         Call call = mOkHttpClient.newCall(request);
@@ -113,7 +113,7 @@ public class HttpEngine {
                     @Override
                     public void run() {
                         if(callBack!=null) {
-                            if(response.code()>=200 && response.code() <300){
+                            if(response.isSuccessful()){
                                 callBack.onSuccess(call, strResponse);
                             }else {
                                 callBack.onError(call,response.code()+":"+response.message());
