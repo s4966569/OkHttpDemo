@@ -9,6 +9,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.alibaba.fastjson.JSON;
+
 import java.io.IOException;
 
 import okhttp3.Call;
@@ -21,44 +23,41 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-public class MainActivity extends AppCompatActivity implements HttpCallBack {
+public class MainActivity extends AppCompatActivity{
     private Button btn;
     private TextView tv;
     public static final MediaType MEDIA_TYPE
             = MediaType.parse("application/text; charset=utf-8");
-    private String content ="";
-    private String url="http://mobile.yanxiu.com/test/api/guopei/examine";
+    private String url="http://mobile.yanxiu.com/v20/api/guopei/examin";
     private Handler mHandler;
+    YXRequest yxRequest = new YXRequest();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         btn = (Button) findViewById(R.id.btn);
         tv = (TextView) findViewById(R.id.tv);
-        content ="{\"token\":\"86dc537de1e481ee15c99a0aa2bd3e22\",\"pid\":\"1789\",\"w\":\"3\"}";
-        content="token="+"86dc537de1e481ee15c99a0aa2bd3e22"+"&"+"pid="+"1789"+"&"+"w="+"3";
+
+        yxRequest.setToken("7818ae7f832d5594f6641a2f09909610");
+        yxRequest.setPid("1289");
+        yxRequest.setW("3");
+        mHandler= new Handler(Looper.getMainLooper());
+
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 try {
-                    post(url, new HttpCallBack() {
+                    HttpEngine.getInstance().doPost(url,yxRequest, new HttpCallBack() {
                         @Override
-                        public void onFailure(Call call, IOException e) {
-                            Log.i("fail",e.getMessage());
+                        public void onError(Call call, String errorMsg) {
+                            Log.i("fail",errorMsg);
+                            tv.setText("返回数据失败！");
                         }
-
                         @Override
-                        public void onResponse(Call call, Response response) {
-                            if (response.isSuccessful()){
-                                tv.setText("返回数据成功");
-                                try {
-                                    Log.i("success",response.body().string());
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                            }else{
-                                tv.setText("返回数据失败！");
-                            }
+                        public void onSuccess(Call call, String strResponse) {
+                            tv.setText("返回数据成功");
+                            Log.i("success",strResponse);
                         }
                     });
                 } catch (IOException e) {
@@ -66,55 +65,5 @@ public class MainActivity extends AppCompatActivity implements HttpCallBack {
                 }
             }
         });
-        mHandler= new Handler(Looper.getMainLooper());
-
-    }
-
-
-
-
-    private void post(String url,final HttpCallBack callBack) throws IOException {
-        OkHttpClient okHttpClient = new OkHttpClient();
-//        RequestBody requestBody = RequestBody.create(MEDIA_TYPE,json);
-        FormBody.Builder formBody = new FormBody.Builder();
-        formBody.add("token","86dc537de1e481ee15c99a0aa2bd3e22");
-        formBody.add("pid","1789");
-        formBody.add("w","3");
-        RequestBody requestBody = formBody.build();
-        Request request = new Request.Builder().url(url).post(requestBody).build();
-        Call call = okHttpClient.newCall(request);
-        call.enqueue(new Callback() {
-            @Override
-            public void onFailure(final Call call, final IOException e) {
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if(callBack!=null)
-                            callBack.onFailure(call,e);
-                    }
-                });
-            }
-
-            @Override
-            public void onResponse(final Call call, final Response response) throws IOException {
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if(callBack!=null)
-                            callBack.onResponse(call,response);
-                    }
-                });
-            }
-        });
-    }
-
-    @Override
-    public void onFailure(Call call, IOException e) {
-
-    }
-
-    @Override
-    public void onResponse(Call call, Response response) {
-
     }
 }
