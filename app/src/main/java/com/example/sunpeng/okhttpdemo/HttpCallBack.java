@@ -8,7 +8,7 @@ import okhttp3.Response;
 /**
  * Created by sunpeng on 2016/7/7.
  */
-public interface HttpCallBack {
+public interface HttpCallBack<T> {
     void onError(Call call, String errorMsg);
-    void onSuccess(Call call, String strResponse);
+    void onSuccess(Call call, T t);
 }
