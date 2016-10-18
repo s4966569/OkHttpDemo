@@ -2,6 +2,8 @@ package com.example.sunpeng.okhttpdemo;
 
 import android.os.Handler;
 import android.os.Looper;
+import android.support.annotation.NonNull;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.alibaba.fastjson.JSON;
@@ -34,8 +36,7 @@ public class HttpEngine {
 
     private HttpEngine() {
         OkHttpClient.Builder builder = new OkHttpClient.Builder();
-        builder.connectTimeout(2, TimeUnit.SECONDS);
-//        mOkHttpClient = new OkHttpClient();
+        builder.connectTimeout(5000, TimeUnit.MILLISECONDS);
         mOkHttpClient = builder.build();
         mHandler = new Handler(Looper.getMainLooper());
     }
@@ -50,111 +51,25 @@ public class HttpEngine {
         return mInstance;
     }
 
-
-    private RequestBody createRequestBody(Object object) {
-        return createRequestBody(object, false);
-    }
-
-    private RequestBody createRequestBody(Object object, boolean isEncode) {
-        RequestBody requestBody;
-        String strRequest = JSON.toJSONString(object);
-        FormBody.Builder formBody = new FormBody.Builder();
-        JSONTokener jsonTokener = new JSONTokener(strRequest);
-        JSONObject jsonObject = null;
-        try {
-            jsonObject = (JSONObject) jsonTokener.nextValue();
-        } catch (JSONException e) {
-            e.printStackTrace();
+    public <T> void invoke(@NonNull BaseRequest baseRequest, Class<T> responseClazz, HttpCallBack<T> httpCallBack){
+        switch (baseRequest.getRequestType()){
+            case RequestType.GET:
+                doGet(baseRequest,responseClazz,httpCallBack);
+                break;
+            case RequestType.POST:
+                doPost(baseRequest,responseClazz,httpCallBack);
+                break;
+            case RequestType.UPLOAD:
+                break;
+            case RequestType.DOWNLOAD:
+                break;
+            default:
+                break;
         }
-        Iterator<String> iterator = jsonObject.keys();
-        if (isEncode) {
-            while (iterator.hasNext()) {
-                String key = iterator.next();
-                formBody.addEncoded(key, jsonObject.optString(key));
-            }
-        } else {
-            while (iterator.hasNext()) {
-                String key = iterator.next();
-                formBody.add(key, jsonObject.optString(key));
-            }
-        }
-
-        requestBody = formBody.build();
-        return requestBody;
     }
 
-    private HttpUrl.Builder createHttpUrlBuilder(String url, Object object) {
-        HttpUrl.Builder builder = HttpUrl.parse(url).newBuilder();
-        String strRequest = JSON.toJSONString(object);
-        JSONTokener jsonTokener = new JSONTokener(strRequest);
-        JSONObject jsonObject = null;
-        try {
-            jsonObject = (JSONObject) jsonTokener.nextValue();
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        Iterator<String> iterator = jsonObject.keys();
-        while (iterator.hasNext()) {
-            String key = iterator.next();
-            builder.addQueryParameter(key, jsonObject.optString(key));
-        }
-        return builder;
-    }
-
-    public <T> void doPost(String url, Object requestObj, Class<T> responseClazz, final HttpCallBack<T> callBack) {
-        doPost(url, requestObj, responseClazz, false, callBack);
-    }
-
-    public <T> void doPost(String url, Object requestObj, final Class<T> clazz, final boolean isEncode, final HttpCallBack<T> callBack){
-        RequestBody requestBody = createRequestBody(requestObj, isEncode);
-        Request request = new Request.Builder().url(url).post(requestBody).build();
-        Call call = mOkHttpClient.newCall(request);
-        call.enqueue(new Callback() {
-            @Override
-            public void onFailure(final Call call, final IOException e) {
-                if (callBack != null) {
-                    mHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            callBack.onError(call, e.getMessage());
-                        }
-                    });
-                }
-            }
-
-            @Override
-            public void onResponse(final Call call, final Response response) {
-                if (callBack != null) {
-                    try {
-                        final String strResponse = response.body().string();
-                        mHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (response.isSuccessful()) {
-                                    T object;
-                                    if (isEncode) {
-                                        object = JSON.parseObject(SysEncryptUtil.decryptDES(strResponse, "DES"), clazz);
-                                        callBack.onSuccess(call, object);
-                                    } else {
-                                        object = JSON.parseObject(strResponse, clazz);
-                                        Log.i("success", strResponse);
-                                        callBack.onSuccess(call, object);
-                                    }
-                                } else {
-                                    callBack.onError(call, response.code() + ":" + response.message());
-                                }
-                            }
-                        });
-                    } catch (Exception e) {
-                        callBack.onError(call, e.getMessage());
-                    }
-                }
-            }
-        });
-    }
-
-    public <T> void doGet(String url, Object requestObj, final Class<T> clazz, final HttpCallBack callBack){
-        HttpUrl.Builder urlBuilder = createHttpUrlBuilder(url, requestObj);
+    private  <T> void doGet(BaseRequest baseRequest ,final Class<T> clazz, final HttpCallBack callBack){
+        HttpUrl.Builder urlBuilder = createHttpUrlBuilder(baseRequest);
         Request request = new Request.Builder().url(urlBuilder.build()).get().build();
         Call call = mOkHttpClient.newCall(request);
         call.enqueue(new Callback() {
@@ -175,6 +90,7 @@ public class HttpEngine {
                 if (callBack != null) {
                     try {
                         final String strResponse = response.body().string();
+                        Log.i("response",strResponse);
                         mHandler.post(new Runnable() {
                             @Override
                             public void run() {
@@ -193,5 +109,102 @@ public class HttpEngine {
                 }
             }
         });
+    }
+
+    private  <T> void doPost(BaseRequest baseRequest, final Class<T> clazz,final HttpCallBack<T> callBack){
+        RequestBody requestBody = createRequestBody(baseRequest);
+        Request request = new Request.Builder().url(baseRequest.getUrl()).post(requestBody).build();
+        Call call = mOkHttpClient.newCall(request);
+        call.enqueue(new Callback() {
+            @Override
+            public void onFailure(final Call call, final IOException e) {
+                if (callBack != null) {
+                    mHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            callBack.onError(call, e.getMessage());
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onResponse(final Call call, final Response response) {
+                if (callBack != null) {
+                    try {
+                        final String strResponse = response.body().string();
+                        Log.i("response",strResponse);
+                        mHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (response.isSuccessful()) {
+                                    T object;
+                                    object = JSON.parseObject(strResponse, clazz);
+                                    callBack.onSuccess(call, object);
+                                } else {
+                                    callBack.onError(call, response.code() + ":" + response.message());
+                                }
+                            }
+                        });
+                    } catch (Exception e) {
+                        callBack.onError(call, e.getMessage());
+                    }
+                }
+            }
+        });
+    }
+
+    private HttpUrl.Builder createHttpUrlBuilder(BaseRequest baseRequest) {
+        HttpUrl.Builder builder = HttpUrl.parse(baseRequest.getUrl()).newBuilder();
+        String strRequest = JSON.toJSONString(baseRequest);
+        JSONTokener jsonTokener = new JSONTokener(strRequest);
+        JSONObject jsonObject = null;
+        try {
+            jsonObject = (JSONObject) jsonTokener.nextValue();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        Iterator<String> iterator = jsonObject.keys();
+        if(baseRequest.isEncode()){
+            while (iterator.hasNext()) {
+                String key = iterator.next();
+                builder.addEncodedQueryParameter(key, jsonObject.optString(key));
+            }
+        }else{
+            while (iterator.hasNext()) {
+                String key = iterator.next();
+                builder.addQueryParameter(key, jsonObject.optString(key));
+            }
+        }
+
+        return builder;
+    }
+
+    private RequestBody createRequestBody(BaseRequest baseRequest) {
+        RequestBody requestBody;
+        String strRequest = JSON.toJSONString(baseRequest);
+        FormBody.Builder formBody = new FormBody.Builder();
+        JSONTokener jsonTokener = new JSONTokener(strRequest);
+        JSONObject jsonObject = null;
+        try {
+            jsonObject = (JSONObject) jsonTokener.nextValue();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        Iterator<String> iterator = jsonObject.keys();
+        if (baseRequest.isEncode()) {
+            while (iterator.hasNext()) {
+                String key = iterator.next();
+                formBody.addEncoded(key, jsonObject.optString(key));
+            }
+        } else {
+            while (iterator.hasNext()) {
+                String key = iterator.next();
+                formBody.add(key, jsonObject.optString(key));
+            }
+        }
+
+        requestBody = formBody.build();
+        return requestBody;
     }
 }

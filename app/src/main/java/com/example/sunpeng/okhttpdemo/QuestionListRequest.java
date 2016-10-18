@@ -5,7 +5,7 @@ import java.io.Serializable;
 /**
  * Created by sunpeng on 2016/9/4.
  */
-public class QuestionListRequest implements Serializable {
+public class QuestionListRequest extends BaseRequest {
     private String paperId;
     private String osType;
     private String pcode;

@@ -5,7 +5,7 @@ import java.io.Serializable;
 /**
  * Created by sunpeng on 2016/9/4.
  */
-public class SubmitQuestionRequest implements Serializable{
+public class SubmitQuestionRequest extends BaseRequest{
     private String osType;
     private String pcode;
     private String token;

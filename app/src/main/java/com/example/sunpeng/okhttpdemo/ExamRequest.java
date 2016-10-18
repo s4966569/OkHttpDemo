@@ -1,11 +1,9 @@
 package com.example.sunpeng.okhttpdemo;
 
-import java.io.Serializable;
-
 /**
  * Created by sunpeng on 2016/9/2.
  */
-public class YXRequest implements Serializable {
+public class ExamRequest extends BaseRequest {
     private String token;
     private String pid;
     private String w;
