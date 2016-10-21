@@ -154,6 +154,48 @@ public class HttpEngine {
         });
     }
 
+    private  <T> void download(BaseRequest baseRequest ,final Class<T> clazz, final HttpCallBack callBack){
+        Request request = new Request.Builder().url(baseRequest.getUrl()).get().build();
+        Call call = mOkHttpClient.newCall(request);
+        call.enqueue(new Callback() {
+            @Override
+            public void onFailure(final Call call, final IOException e) {
+                if (callBack != null) {
+                    mHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            callBack.onError(call, e.getMessage());
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onResponse(final Call call, final Response response) {
+                if (callBack != null) {
+                    try {
+                        final String strResponse = response.body().string();
+                        Log.i("response",strResponse);
+                        mHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (response.isSuccessful()) {
+                                    T object;
+                                    object = JSON.parseObject(strResponse, clazz);
+                                    callBack.onSuccess(call, object);
+                                } else {
+                                    callBack.onError(call, response.code() + ":" + response.message());
+                                }
+                            }
+                        });
+                    } catch (Exception e) {
+                        callBack.onError(call, e.getMessage());
+                    }
+                }
+            }
+        });
+    }
+
     private HttpUrl.Builder createHttpUrlBuilder(BaseRequest baseRequest) {
         HttpUrl.Builder builder = HttpUrl.parse(baseRequest.getUrl()).newBuilder();
         String strRequest = JSON.toJSONString(baseRequest);
