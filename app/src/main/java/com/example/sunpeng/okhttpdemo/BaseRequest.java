@@ -19,6 +19,8 @@ public class BaseRequest implements Serializable {
     private boolean isEncrypt = false;      //请求参数是否需要加密
     @JSONField(serialize = false)
     private boolean isDecrypt = false;      //返回数据是否需要解密
+    @JSONField(serialize = false)
+    private String mockFileName;            //放在Assets目录下面的数据文件的名字
 
     public String getUrl() {
         return url;
@@ -58,5 +60,13 @@ public class BaseRequest implements Serializable {
 
     public void setDecrypt(boolean decrypt) {
         isDecrypt = decrypt;
+    }
+
+    public String getMockFileName() {
+        return mockFileName;
+    }
+
+    public void setMockFileName(String mockFileName) {
+        this.mockFileName = mockFileName;
     }
 }
