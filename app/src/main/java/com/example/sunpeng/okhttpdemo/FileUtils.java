@@ -73,11 +73,11 @@ public class FileUtils {
         return t;
     }
 
-    public static InputStream getInputStreamFromAsset(String filaName) {
+    public static InputStream getInputStreamFromAsset(String fileName) {
         InputStream inputStream = null;
         try {
             AssetManager asset = MyApplication.getApplication().getAssets();
-            inputStream = asset.open("province_data.xml");
+            inputStream = asset.open(fileName);
 
         } catch (Throwable e) {
             e.printStackTrace();

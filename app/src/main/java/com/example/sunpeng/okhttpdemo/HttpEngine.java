@@ -3,7 +3,6 @@ package com.example.sunpeng.okhttpdemo;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
-import android.text.TextUtils;
 import android.util.Log;
 
 import com.alibaba.fastjson.JSON;
@@ -13,7 +12,6 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 

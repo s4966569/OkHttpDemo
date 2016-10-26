@@ -1,5 +1,7 @@
 package com.example.sunpeng.okhttpdemo;
 
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 
 import java.io.File;
@@ -23,10 +25,12 @@ public class UploadRequestBody extends RequestBody {
     private final ProgressListener mProgressListener;
     private final RequestBody mRequestBody;
     private BufferedSink mBufferedSink;
+    private Handler mHandler;
 
     public UploadRequestBody(@NonNull RequestBody requestBody, ProgressListener progressListener){
         mRequestBody=requestBody;
         mProgressListener=progressListener;
+        mHandler = new Handler(Looper.getMainLooper());
     }
 
     @Override
@@ -47,6 +51,12 @@ public class UploadRequestBody extends RequestBody {
     public ForwardingSink createForwardingSink(Sink sink){
         return new ForwardingSink(sink) {
             long contentLength,writtenBytes;
+            Runnable runnable = new Runnable() {
+                @Override
+                public void run() {
+                  mProgressListener.onUpdate(contentLength,writtenBytes);
+                }
+            };
             @Override
             public void write(Buffer source, long byteCount) throws IOException {
                 super.write(source, byteCount);
@@ -54,12 +64,8 @@ public class UploadRequestBody extends RequestBody {
                     contentLength=mRequestBody.contentLength();
                 writtenBytes+=byteCount;
                 if(mProgressListener!=null)
-                    mProgressListener.onUpdate(contentLength,writtenBytes);
+                    mHandler.post(runnable);
             }
         };
-    }
-
-    public interface ProgressListener{
-        void onUpdate(long contentLength,long writtenBytes);
     }
 }

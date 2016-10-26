@@ -18,11 +18,11 @@ import okio.Source;
 
 public class DownloadResponseBody extends ResponseBody {
     private final ResponseBody mResponseBody;
-    private final UploadRequestBody.ProgressListener mProgressListener;
+    private final ProgressListener mProgressListener;
     private BufferedSource mBufferedSource;
     private File mFile;
 
-    public DownloadResponseBody(ResponseBody mResponseBody, File file,UploadRequestBody.ProgressListener mProgressListener) {
+    public DownloadResponseBody(ResponseBody mResponseBody, File file,ProgressListener mProgressListener) {
         this.mResponseBody = mResponseBody;
         this.mProgressListener = mProgressListener;
         this.mFile = file;

@@ -1,6 +1,8 @@
 package com.example.sunpeng.okhttpdemo;
 
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -48,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
     private SubmitQuestionRequest submitQuestionRequest = new SubmitQuestionRequest();
     private File uploadFile, downloadFile;
     private boolean hasSetProgressMax = false;
+    private Handler mHandler;
 
 
     @Override
@@ -87,6 +90,7 @@ public class MainActivity extends AppCompatActivity {
         btn_upload.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                hasSetProgressMax=false;
                 uploadPortrait(uploadFile);
             }
         });
@@ -94,6 +98,7 @@ public class MainActivity extends AppCompatActivity {
         btn_download.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                hasSetProgressMax=false;
                 downloadFile(downloadFile, ucUrl);
             }
         });
@@ -102,13 +107,15 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 progressBar.setMax(100);
                 progressBar.setProgress(0);
+                tv_progress.setText("当前上传：0");
             }
         });
 
     }
 
     private void initData() {
-        uploadFile = new File(Environment.getExternalStorageDirectory() + "/yanxiu/1231.jpg");
+        mHandler = new Handler(Looper.getMainLooper());
+        uploadFile = new File(Environment.getExternalStorageDirectory() + "/yanxiu/12131.jpg");
         downloadFile = new File(Environment.getExternalStorageDirectory() + "/yanxiu/uc.apk");
         if (!downloadFile.exists()) {
             try {
@@ -172,6 +179,15 @@ public class MainActivity extends AppCompatActivity {
         final Request request = new Request.Builder().url(url).get().build();
         Call call = okHttpClient.newCall(request);
         call.enqueue(new Callback() {
+            long contentLength = 0;
+            long writtenBytes = 0;
+            Runnable runnable = new Runnable() {
+                @Override
+                public void run() {
+                    progressListener.onUpdate(contentLength,writtenBytes);
+                }
+            };
+
             @Override
             public void onFailure(Call call, IOException e) {
             }
@@ -179,30 +195,29 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 if(response.isSuccessful()){
-                    long contentLength = 0;
                     contentLength = response.body().contentLength();
                     InputStream is = response.body().byteStream();
                     FileOutputStream fos = new FileOutputStream(file);
                     BufferedInputStream bis = new BufferedInputStream(is);
-                    long writtenBytes = 0;
-                    byte[] buffer = new byte[1024];
+                    byte[] buffer = new byte[2048];
                     int len = 0;
                     while ((len = bis.read(buffer)) != -1) {
                         fos.write(buffer, 0, len);
                         writtenBytes += len;
-                        progressListener.onUpdate(contentLength,writtenBytes);
+                        mHandler.post(runnable);
                     }
                     fos.flush();
                     is.close();
                     fos.close();
                     bis.close();
+
                 }
             }
         });
     }
 
 
-    UploadRequestBody.ProgressListener progressListener = new UploadRequestBody.ProgressListener() {
+    ProgressListener progressListener = new ProgressListener() {
         @Override
         public void onUpdate(long contentLength, long writtenBytes) {
             if (!hasSetProgressMax) {
@@ -211,7 +226,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.i("max", "" + contentLength);
             }
             progressBar.setProgress((int) writtenBytes);
-//            tv_progress.setText("当前上传："+writtenBytes+"/"+contentLength);
+            tv_progress.setText("当前上传："+writtenBytes+"/"+contentLength);
             Log.i("upload", "" + writtenBytes);
         }
     };
