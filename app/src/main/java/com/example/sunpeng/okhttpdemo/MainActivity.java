@@ -115,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void initData() {
         mHandler = new Handler(Looper.getMainLooper());
-        uploadFile = new File(Environment.getExternalStorageDirectory() + "/yanxiu/12131.jpg");
+        uploadFile = new File(Environment.getExternalStorageDirectory() + "/yanxiu/1231.jpg");
         downloadFile = new File(Environment.getExternalStorageDirectory() + "/yanxiu/uc.apk");
         if (!downloadFile.exists()) {
             try {
