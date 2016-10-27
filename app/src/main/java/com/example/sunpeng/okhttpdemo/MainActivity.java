@@ -210,7 +210,6 @@ public class MainActivity extends AppCompatActivity {
                     is.close();
                     fos.close();
                     bis.close();
-
                 }
             }
         });
