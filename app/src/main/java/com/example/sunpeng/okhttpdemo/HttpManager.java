@@ -20,7 +20,7 @@ public class HttpManager {
     }
 
     public <T> void invoke(@NonNull BaseRequest baseRequest, Class<T> responseClazz, HttpCallBack<T> httpCallBack){
-        if(isUseMockData){
+        if(baseRequest.isUseMockData() && isUseMockData){
             MockEngine.getInstance().invoke(baseRequest,responseClazz,httpCallBack);
         }else{
             HttpEngine.getInstance().invoke(baseRequest,responseClazz,httpCallBack);

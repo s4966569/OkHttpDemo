@@ -20,6 +20,8 @@ public class BaseRequest implements Serializable {
     @JSONField(serialize = false)
     private boolean isDecrypt = false;      //返回数据是否需要解密
     @JSONField(serialize = false)
+    private boolean isUseMockData = false;
+    @JSONField(serialize = false)
     private String mockFileName;            //放在Assets目录下面的数据文件的名字
 
     public String getUrl() {
@@ -60,6 +62,14 @@ public class BaseRequest implements Serializable {
 
     public void setDecrypt(boolean decrypt) {
         isDecrypt = decrypt;
+    }
+
+    public boolean isUseMockData() {
+        return isUseMockData;
+    }
+
+    public void setUseMockData(boolean useMockData) {
+        isUseMockData = useMockData;
     }
 
     public String getMockFileName() {
