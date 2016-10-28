@@ -1,5 +1,6 @@
 package com.example.sunpeng.okhttpdemo;
 
+import android.content.Context;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
@@ -13,16 +14,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStreamWriter;
 
 import okhttp3.Call;
 import okhttp3.Callback;
-import okhttp3.Interceptor;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
@@ -31,6 +29,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
+    private Context mContext;
     private Button btn, btn_upload, btn_clear, btn_download;
     private TextView tv, tv_progress;
     private ProgressBar progressBar;
@@ -48,6 +47,8 @@ public class MainActivity extends AppCompatActivity {
     private ExamRequest examRequest = new ExamRequest();
     private QuestionListRequest questionListRequest = new QuestionListRequest();
     private SubmitQuestionRequest submitQuestionRequest = new SubmitQuestionRequest();
+    private PortraitUploadRequest portraitUploadRequest;
+    private DownloadRequest downloadRequest;
     private File uploadFile, downloadFile;
     private boolean hasSetProgressMax = false;
     private Handler mHandler;
@@ -56,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mContext = this;
         setContentView(R.layout.activity_main);
         btn = (Button) findViewById(R.id.btn);
         tv = (TextView) findViewById(R.id.tv);
@@ -65,51 +67,7 @@ public class MainActivity extends AppCompatActivity {
         btn_clear = (Button) findViewById(R.id.btn_clear);
         btn_download = (Button) findViewById(R.id.btn_download);
         initData();
-
-        btn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                tv.setText("");
-                HttpEngine.getInstance().invoke(examRequest, ExamResponse.class, new HttpCallBack<ExamResponse>() {
-                    @Override
-                    public void onError(Call call, String errorMsg) {
-                        Log.i("error", errorMsg);
-                        tv.setText(errorMsg);
-
-                    }
-
-                    @Override
-                    public void onSuccess(Call call, ExamResponse response) {
-                        ExamResponse exam = response;
-                        tv.setText(exam.getDesc());
-                    }
-                });
-            }
-        });
-
-        btn_upload.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                hasSetProgressMax=false;
-                uploadPortrait(uploadFile);
-            }
-        });
-
-        btn_download.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                hasSetProgressMax=false;
-                downloadFile(downloadFile, ucUrl);
-            }
-        });
-        btn_clear.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                progressBar.setMax(100);
-                progressBar.setProgress(0);
-                tv_progress.setText("当前上传：0");
-            }
-        });
+        initListener();
 
     }
 
@@ -142,79 +100,100 @@ public class MainActivity extends AppCompatActivity {
         questionListRequest.setPcode(pcode);
         questionListRequest.setToken(token);
         questionListRequest.setVersion(version);
+
+        portraitUploadRequest = new PortraitUploadRequest();
+        portraitUploadRequest.setRequestType(RequestType.POST);
+        portraitUploadRequest.setFileToUpload(uploadFile);
+        portraitUploadRequest.setUrl(uploadUrl);
+        portraitUploadRequest.setFileKey("newUpload");
+        portraitUploadRequest.setToken("5372dd841e2ca489c6ec92c0dcc51fed");
+        portraitUploadRequest.setWidth("80");
+        portraitUploadRequest.setHeight("80");
+        portraitUploadRequest.setLeft("-40");
+        portraitUploadRequest.setTop("40");
+        portraitUploadRequest.setRate("1");
+        portraitUploadRequest.setProgressListener(progressListener);
+
+        downloadRequest = new DownloadRequest();
+        downloadRequest.setUrl(ucUrl);
+        downloadRequest.setRequestType(RequestType.DOWNLOAD);
+        downloadRequest.setFileToSaveData(downloadFile);
+        downloadRequest.setProgressListener(progressListener);
     }
 
-    private void uploadPortrait(File file) {
-        OkHttpClient httpClient = new OkHttpClient();
-        UploadRequestBody uploadRequestBody = new UploadRequestBody(RequestBody.create(MediaType.parse("application/octet-stream"), file), progressListener);
-        MultipartBody.Builder builder = new MultipartBody.Builder();
-        RequestBody formBody = builder.setType(MultipartBody.FORM)
-                .addFormDataPart("token", "5372dd841e2ca489c6ec92c0dcc51fed")
-                .addFormDataPart("width", "80")
-                .addFormDataPart("height", "80")
-                .addFormDataPart("left", "-40")
-                .addFormDataPart("top", "40")
-                .addFormDataPart("rate", "1")
-                .addFormDataPart("newUpload", file.getName(), uploadRequestBody)
-                .build();
-        Request request = new Request.Builder().url(uploadUrl).post(formBody).build();
-        httpClient.newCall(request).enqueue(new Callback() {
+    private void initListener(){
+
+        btn.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onFailure(Call call, IOException e) {
-                Log.i("upload", e.getMessage());
-            }
+            public void onClick(View view) {
+                tv.setText("");
+                HttpEngine.getInstance().invoke(examRequest, ExamResponse.class, new HttpCallBack<ExamResponse>() {
+                    @Override
+                    public void onError(Call call, String errorMsg) {
+                        Log.i("error", errorMsg);
+                        tv.setText(errorMsg);
 
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                String result = response.body().string();
-                Log.i("upload", result);
-                hasSetProgressMax = false;
-            }
-        });
-
-    }
-
-    private void downloadFile(final File file, String url) {
-        OkHttpClient okHttpClient = new OkHttpClient();
-        final Request request = new Request.Builder().url(url).get().build();
-        Call call = okHttpClient.newCall(request);
-        call.enqueue(new Callback() {
-            long contentLength = 0;
-            long writtenBytes = 0;
-            Runnable runnable = new Runnable() {
-                @Override
-                public void run() {
-                    progressListener.onUpdate(contentLength,writtenBytes);
-                }
-            };
-
-            @Override
-            public void onFailure(Call call, IOException e) {
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                if(response.isSuccessful()){
-                    contentLength = response.body().contentLength();
-                    InputStream is = response.body().byteStream();
-                    FileOutputStream fos = new FileOutputStream(file);
-                    BufferedInputStream bis = new BufferedInputStream(is);
-                    byte[] buffer = new byte[2048];
-                    int len = 0;
-                    while ((len = bis.read(buffer)) != -1) {
-                        fos.write(buffer, 0, len);
-                        writtenBytes += len;
-                        mHandler.post(runnable);
                     }
-                    fos.flush();
-                    is.close();
-                    fos.close();
-                    bis.close();
-                }
+
+                    @Override
+                    public void onSuccess(Call call, ExamResponse response) {
+                        ExamResponse exam = response;
+                        tv.setText(exam.getDesc());
+                    }
+                });
             }
         });
-    }
 
+        btn_upload.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                hasSetProgressMax=false;
+//                uploadPortrait(uploadFile);
+                HttpEngine.getInstance().invoke(portraitUploadRequest, null, new HttpCallBack<Object>() {
+                    @Override
+                    public void onError(Call call, String errorMsg) {
+                        Log.i("error", errorMsg);
+                        Toast.makeText(mContext,"上传失败！",Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onSuccess(Call call, Object o) {
+                        Toast.makeText(mContext,"上传成功！",Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        });
+
+        btn_download.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                hasSetProgressMax=false;
+//                downloadFile(downloadFile, ucUrl);
+                HttpEngine.getInstance().invoke(downloadRequest, null, new HttpCallBack<File>() {
+                    @Override
+                    public void onError(Call call, String errorMsg) {
+                        Log.i("error", errorMsg);
+                        Toast.makeText(mContext,"下载失败！",Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onSuccess(Call call, File file) {
+                        Toast.makeText(mContext,"下载成功！",Toast.LENGTH_SHORT).show();
+                        Toast.makeText(mContext,file.getName(),Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        });
+        btn_clear.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                progressBar.setMax(100);
+                progressBar.setProgress(0);
+                tv_progress.setText("当前进度：0");
+            }
+        });
+
+    }
 
     ProgressListener progressListener = new ProgressListener() {
         @Override
@@ -225,8 +204,8 @@ public class MainActivity extends AppCompatActivity {
                 Log.i("max", "" + contentLength);
             }
             progressBar.setProgress((int) writtenBytes);
-            tv_progress.setText("当前上传："+writtenBytes+"/"+contentLength);
-            Log.i("upload", "" + writtenBytes);
+            tv_progress.setText("当前进度："+writtenBytes+"/"+contentLength);
+            Log.i("progress", "" + writtenBytes);
         }
     };
 }

@@ -21,15 +21,15 @@ import okio.Source;
  * Created by sunpeng on 2016/10/20.
  */
 
-public class UploadRequestBody extends RequestBody {
+public class FileUploadRequestBody extends RequestBody {
     private final ProgressListener mProgressListener;
     private final RequestBody mRequestBody;
     private BufferedSink mBufferedSink;
     private Handler mHandler;
 
-    public UploadRequestBody(@NonNull RequestBody requestBody, ProgressListener progressListener){
-        mRequestBody=requestBody;
-        mProgressListener=progressListener;
+    public FileUploadRequestBody(@NonNull RequestBody requestBody, ProgressListener progressListener) {
+        mRequestBody = requestBody;
+        mProgressListener = progressListener;
         mHandler = new Handler(Looper.getMainLooper());
     }
 
@@ -40,30 +40,31 @@ public class UploadRequestBody extends RequestBody {
 
     @Override
     public void writeTo(BufferedSink bufferedSink) throws IOException {
-        if(mBufferedSink==null)
+        if (mBufferedSink == null)
             mBufferedSink = Okio.buffer(createForwardingSink(bufferedSink));
         mRequestBody.writeTo(mBufferedSink);
         mBufferedSink.flush();
     }
 
 
-
-    public ForwardingSink createForwardingSink(Sink sink){
+    public ForwardingSink createForwardingSink(Sink sink) {
         return new ForwardingSink(sink) {
-            long contentLength,writtenBytes;
+            long contentLength, writtenBytes;
             Runnable runnable = new Runnable() {
                 @Override
                 public void run() {
-                  mProgressListener.onUpdate(contentLength,writtenBytes);
+                    if (mProgressListener != null)
+                        mProgressListener.onUpdate(contentLength, writtenBytes);
                 }
             };
+
             @Override
             public void write(Buffer source, long byteCount) throws IOException {
                 super.write(source, byteCount);
-                if(contentLength==0)
-                    contentLength=mRequestBody.contentLength();
-                writtenBytes+=byteCount;
-                if(mProgressListener!=null)
+                if (contentLength == 0)
+                    contentLength = mRequestBody.contentLength();
+                writtenBytes += byteCount;
+                if (mProgressListener != null)
                     mHandler.post(runnable);
             }
         };
