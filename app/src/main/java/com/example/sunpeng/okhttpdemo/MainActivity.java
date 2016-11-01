@@ -13,6 +13,9 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.annotation.JSONField;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -36,14 +39,14 @@ public class MainActivity extends AppCompatActivity {
     public static final MediaType MEDIA_TYPE
             = MediaType.parse("application/text; charset=utf-8");
     private String examUrl = "http://mobile.yanxiu.com/v20/api/guopei/examine";
-    private String submitQUrl = "http://dev.hwk.yanxiu.com/app/q/submitQ.do";
-    private String quesListUrl = "http://dev.hwk.yanxiu.com/app/personalData/getQuestionList.do";
+    private String submitQUrl = "http://test.hwk.yanxiu.com/app/q/submitQ.do";
+    private String quesListUrl = "http://test.hwk.yanxiu.com/app/personalData/getQuestionList.do";
     private String uploadUrl = "http://mobile.yanxiu.com/v20/api/resource/uploadheader";
     private String ucUrl = "http://106.2.184.227:9999/wap3.ucweb.com/files/UCBrowser/zh-cn/999/UCBrowser_V11.1.0.870_android_pf145_(Build161012223751).apk?auth_key=1477648349-0-0-f7030bd113a4683c72480fafce14c9ba&vh=31b32982c17a91fb081019e19bbd54db&SESSID=478287a2d8f3c123957300e60dd127c6";
     private String osType = "0";
     private String pcode = "010110000";
-    private String token = "834fe6b8909824f16b5d75c141f5a340";
-    private String version = "2.2.2";
+    private String token = "e95dab459d35c9be935f39403ba8d8f2";
+    private String version = "2.3.2.1";
     private ExamRequest examRequest = new ExamRequest();
     private QuestionListRequest questionListRequest = new QuestionListRequest();
     private SubmitQuestionRequest submitQuestionRequest = new SubmitQuestionRequest();
@@ -73,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void initData() {
         mHandler = new Handler(Looper.getMainLooper());
-        uploadFile = new File(Environment.getExternalStorageDirectory() + "/yanxiu/1231.jpg");
+        uploadFile = new File(Environment.getExternalStorageDirectory() + "/yanxiu/12131.jpg");
         downloadFile = new File(Environment.getExternalStorageDirectory() + "/yanxiu/uc.apk");
         if (!downloadFile.exists()) {
             try {
@@ -84,18 +87,23 @@ public class MainActivity extends AppCompatActivity {
         }
 
         examRequest.setUrl(examUrl);
-        examRequest.setRequestType(RequestType.POST);
+//        examRequest.setRequestType(RequestType.POST);
+        examRequest.setTag("exam");
         examRequest.setToken("7818ae7f832d5594f6641a2f09909610");
         examRequest.setPid("1289");
         examRequest.setW("3");
 
         submitQuestionRequest.setUrl(submitQUrl);
+        submitQuestionRequest.setTag("submitQuestion");
         submitQuestionRequest.setOsType(osType);
         submitQuestionRequest.setPcode(pcode);
         submitQuestionRequest.setToken(token);
 
         questionListRequest.setUrl(quesListUrl);
-        questionListRequest.setPaperId("19515");
+        questionListRequest.setRequestType(RequestType.POST);
+        questionListRequest.setTag("getQuestionList");
+        questionListRequest.setDecrypt(true);
+        questionListRequest.setPaperId("20999");
         questionListRequest.setOsType(osType);
         questionListRequest.setPcode(pcode);
         questionListRequest.setToken(token);
@@ -103,6 +111,7 @@ public class MainActivity extends AppCompatActivity {
 
         portraitUploadRequest = new PortraitUploadRequest();
         portraitUploadRequest.setRequestType(RequestType.POST);
+        portraitUploadRequest.setTag("uploadPortrait");
         portraitUploadRequest.setFileToUpload(uploadFile);
         portraitUploadRequest.setUrl(uploadUrl);
         portraitUploadRequest.setFileKey("newUpload");
@@ -116,6 +125,7 @@ public class MainActivity extends AppCompatActivity {
 
         downloadRequest = new DownloadRequest();
         downloadRequest.setUrl(ucUrl);
+        downloadRequest.setTag("downloadUc");
         downloadRequest.setRequestType(RequestType.DOWNLOAD);
         downloadRequest.setFileToSaveData(downloadFile);
         downloadRequest.setProgressListener(progressListener);
@@ -132,13 +142,24 @@ public class MainActivity extends AppCompatActivity {
                     public void onError(Call call, String errorMsg) {
                         Log.i("error", errorMsg);
                         tv.setText(errorMsg);
-
                     }
 
                     @Override
                     public void onSuccess(Call call, ExamResponse response) {
                         ExamResponse exam = response;
                         tv.setText(exam.getDesc());
+                    }
+                });
+
+                HttpEngine.getInstance().invoke(questionListRequest, JSONObject.class, new HttpCallBack<JSONObject>() {
+                    @Override
+                    public void onError(Call call, String errorMsg) {
+
+                    }
+
+                    @Override
+                    public void onSuccess(Call call, JSONObject o) {
+
                     }
                 });
             }

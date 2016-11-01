@@ -13,7 +13,6 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 
 import java.io.BufferedInputStream;
-import java.io.EOFException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -45,15 +44,19 @@ public class HttpEngine {
     private HttpEngine() {
         OkHttpClient.Builder builder = new OkHttpClient.Builder();
         builder.connectTimeout(5000, TimeUnit.MILLISECONDS);
-        builder.addNetworkInterceptor(new Interceptor() {
-            @Override
-            public Response intercept(Chain chain) throws IOException {
-                Request request =chain.request();
-                Log.i("request:",request.toString());
-                Response response = chain.proceed(request);
-                return response;
-            }
-        });
+//        builder.addNetworkInterceptor(new Interceptor() {
+//            @Override
+//            public Response intercept(Chain chain) throws IOException {
+//                Request request =chain.request();
+//                if(request.method().equals("GET")){
+//                    Log.i("request::"+request.tag(),request.toString());
+//                }else if(request.method().equals("POST")){
+//                    Log.i("request::"+request.tag(),bodyToString(request.body()));
+//                }
+//                Response response = chain.proceed(request);
+//                return response;
+//            }
+//        });
         mOkHttpClient = builder.build();
         mHandler = new Handler(Looper.getMainLooper());
     }
@@ -89,8 +92,9 @@ public class HttpEngine {
 
     private <T> void doGet(BaseRequest baseRequest, final Class<T> clazz, final HttpCallBack callBack) {
         HttpUrl.Builder urlBuilder = createHttpUrlBuilder(baseRequest);
-        Request request = new Request.Builder().url(urlBuilder.build()).get().build();
+        Request request = new Request.Builder().tag(baseRequest.getTag()).url(urlBuilder.build()).get().build();
         Call call = mOkHttpClient.newCall(request);
+//        Log.i("request::method="+request.method()+",tag="+request.tag(),"url="+request.url().toString());
         call.enqueue(new Callback() {
             @Override
             public void onFailure(final Call call, final IOException e) {
@@ -109,7 +113,7 @@ public class HttpEngine {
                 if (callBack != null) {
                     try {
                         final String strResponse = response.body().string();
-                        Log.i("response", strResponse);
+                        Log.i("response::"+call.request().tag(), strResponse);
                         mHandler.post(new Runnable() {
                             @Override
                             public void run() {
@@ -130,15 +134,16 @@ public class HttpEngine {
         });
     }
 
-    private <T> void doPost(BaseRequest baseRequest, final Class<T> clazz, final HttpCallBack<T> callBack) {
+    private <T> void doPost(final BaseRequest baseRequest, final Class<T> clazz, final HttpCallBack<T> callBack) {
         RequestBody requestBody;
         if (baseRequest instanceof UploadRequest) {
             requestBody = createUploadRequestBody((UploadRequest) baseRequest);
         } else {
             requestBody = createRequestBody(baseRequest);
         }
-        Request request = new Request.Builder().url(baseRequest.getUrl()).post(requestBody).build();
+        Request request = new Request.Builder().tag(baseRequest.getTag()).url(baseRequest.getUrl()).post(requestBody).build();
         Call call = mOkHttpClient.newCall(request);
+//        Log.i("request::method="+request.method()+",tag="+request.tag(),"url="+request.url()+" params::"+bodyToString(request.body()));
         call.enqueue(new Callback() {
             @Override
             public void onFailure(final Call call, final IOException e) {
@@ -156,14 +161,18 @@ public class HttpEngine {
             public void onResponse(final Call call, final Response response) {
                 if (callBack != null) {
                     try {
-                        final String strResponse = response.body().string();
-                        Log.i("response", strResponse);
+                        String strResponse = response.body().string();
+                        if(baseRequest.isDecrypt()){
+                            strResponse = SysEncryptUtil.decryptDES(strResponse,"DES");
+                        }
+                        Log.i("response::"+call.request().tag(), strResponse);
+                        final String finalStrResponse = strResponse;
                         mHandler.post(new Runnable() {
                             @Override
                             public void run() {
                                 if (response.isSuccessful()) {
                                     T object;
-                                    object = JSON.parseObject(strResponse, clazz);
+                                    object = JSON.parseObject(finalStrResponse, clazz);
                                     callBack.onSuccess(call, object);
                                 } else {
                                     callBack.onError(call, response.code() + ":" + response.message());
@@ -185,7 +194,7 @@ public class HttpEngine {
         DownloadRequest downloadRequest = (DownloadRequest) baseRequest;
         final ProgressListener progressListener = downloadRequest.getProgressListener();
         final File fileToSaveData = downloadRequest.getFileToSaveData();
-        Request request = new Request.Builder().url(downloadRequest.getUrl()).get().build();
+        Request request = new Request.Builder().tag(baseRequest.getTag()).url(downloadRequest.getUrl()).get().build();
         Call call = mOkHttpClient.newCall(request);
         call.enqueue(new Callback() {
             long contentLength = 0;
@@ -297,7 +306,7 @@ public class HttpEngine {
         HttpUrl.Builder builder = HttpUrl.parse(baseRequest.getUrl()).newBuilder();
         String strRequest = JSON.toJSONString(baseRequest);
         JSONTokener jsonTokener = new JSONTokener(strRequest);
-        JSONObject jsonObject = null;
+        JSONObject jsonObject ;
         try {
             jsonObject = (JSONObject) jsonTokener.nextValue();
         } catch (JSONException e) {
@@ -354,7 +363,6 @@ public class HttpEngine {
         MultipartBody.Builder builder = new MultipartBody.Builder();
         builder.setType(MultipartBody.FORM);
         RequestBody formBody;
-
         String strRequest = JSON.toJSONString(uploadRequest);
         JSONTokener jsonTokener = new JSONTokener(strRequest);
         JSONObject jsonObject;
@@ -377,5 +385,16 @@ public class HttpEngine {
         formBody = builder.build();
 
         return formBody;
+    }
+
+    private static String bodyToString(RequestBody requestBody){
+        try {
+            okio.Buffer buffer = new okio.Buffer();
+            requestBody.writeTo(buffer);
+            return buffer.readUtf8();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return  e.getMessage();
+        }
     }
 }

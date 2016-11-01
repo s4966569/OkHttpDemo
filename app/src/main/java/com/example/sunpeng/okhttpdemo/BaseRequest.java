@@ -12,7 +12,9 @@ public class BaseRequest implements Serializable {
     @JSONField(serialize = false)
     private String url;                    //请求地址
     @JSONField(serialize = false)
-    private String requestType = RequestType.GET;    //请求方式
+    private String requestType = RequestType.GET;    //请求方式,默认为Get
+    @JSONField(serialize = false)
+    private String tag;                    //请求标记
     @JSONField(serialize = false)
     private boolean isEncode = false;      //是否需要URLEncoder进行编码
     @JSONField(serialize = false)
@@ -20,9 +22,9 @@ public class BaseRequest implements Serializable {
     @JSONField(serialize = false)
     private boolean isDecrypt = false;      //返回数据是否需要解密
     @JSONField(serialize = false)
-    private boolean isUseMockData = false;
+    private boolean isUseMockData = false;  //是否使用mock模拟数据
     @JSONField(serialize = false)
-    private String mockFileName;            //放在Assets目录下面的数据文件的名字
+    private String mockFileName;            //放在Assets目录下面的模拟数据文件的名字
 
     public String getUrl() {
         return url;
@@ -38,6 +40,14 @@ public class BaseRequest implements Serializable {
 
     public void setRequestType(String requestType) {
         this.requestType = requestType;
+    }
+
+    public String getTag() {
+        return tag;
+    }
+
+    public void setTag(String tag) {
+        this.tag = tag;
     }
 
     public boolean isEncode() {
