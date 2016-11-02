@@ -33,7 +33,7 @@ import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
     private Context mContext;
-    private Button btn, btn_upload, btn_clear, btn_download;
+    private Button btn, btn_upload, btn_clear, btn_download,btn_cancel,btn_pause;
     private TextView tv, tv_progress;
     private ProgressBar progressBar;
     public static final MediaType MEDIA_TYPE
@@ -69,6 +69,8 @@ public class MainActivity extends AppCompatActivity {
         btn_upload = (Button) findViewById(R.id.btn_upload);
         btn_clear = (Button) findViewById(R.id.btn_clear);
         btn_download = (Button) findViewById(R.id.btn_download);
+        btn_cancel = (Button) findViewById(R.id.btn_cancel);
+        btn_pause = (Button) findViewById(R.id.btn_pause);
         initData();
         initListener();
 
@@ -169,7 +171,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 hasSetProgressMax=false;
-//                uploadPortrait(uploadFile);
                 HttpEngine.getInstance().invoke(portraitUploadRequest, null, new HttpCallBack<Object>() {
                     @Override
                     public void onError(Call call, String errorMsg) {
@@ -189,12 +190,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 hasSetProgressMax=false;
-//                downloadFile(downloadFile, ucUrl);
                 HttpEngine.getInstance().invoke(downloadRequest, null, new HttpCallBack<File>() {
                     @Override
                     public void onError(Call call, String errorMsg) {
                         Log.i("error", errorMsg);
-                        Toast.makeText(mContext,"下载失败！",Toast.LENGTH_SHORT).show();
+                        Toast.makeText(mContext,errorMsg,Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
@@ -211,6 +211,13 @@ public class MainActivity extends AppCompatActivity {
                 progressBar.setMax(100);
                 progressBar.setProgress(0);
                 tv_progress.setText("当前进度：0");
+            }
+        });
+
+        btn_cancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                HttpEngine.getInstance().cancel("downloadUc",false);
             }
         });
 

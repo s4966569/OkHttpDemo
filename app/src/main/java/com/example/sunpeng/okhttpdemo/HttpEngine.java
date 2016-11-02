@@ -5,6 +5,7 @@ import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.alibaba.fastjson.JSON;
 
@@ -14,18 +15,19 @@ import org.json.JSONTokener;
 
 import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.Call;
 import okhttp3.Callback;
+import okhttp3.Dispatcher;
 import okhttp3.FormBody;
 import okhttp3.HttpUrl;
-import okhttp3.Interceptor;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
@@ -40,10 +42,12 @@ public class HttpEngine {
     private OkHttpClient mOkHttpClient;
     private Handler mHandler;
     private static volatile HttpEngine mInstance;
+    private static final int CONNECT_TIME_OUT=5000;
+    private List<Call> mCalls;
 
     private HttpEngine() {
         OkHttpClient.Builder builder = new OkHttpClient.Builder();
-        builder.connectTimeout(5000, TimeUnit.MILLISECONDS);
+        builder.connectTimeout(CONNECT_TIME_OUT, TimeUnit.MILLISECONDS);
 //        builder.addNetworkInterceptor(new Interceptor() {
 //            @Override
 //            public Response intercept(Chain chain) throws IOException {
@@ -237,25 +241,7 @@ public class HttpEngine {
                                 writtenBytes += len;
                                 mHandler.post(runnable);
                             }
-                        } catch (final FileNotFoundException e) {
-                            e.printStackTrace();
-                            mHandler.post(new Runnable() {
-                                @Override
-                                public void run() {
-                                    callBack.onError(call, e.getMessage());
-                                }
-                            });
-                            return;
-                        } catch (final IOException e) {
-                            e.printStackTrace();
-                            mHandler.post(new Runnable() {
-                                @Override
-                                public void run() {
-                                    callBack.onError(call, e.getMessage());
-                                }
-                            });
-                            return;
-                        } catch (final Exception e){
+                        }catch (final Exception e){
                             e.printStackTrace();
                             mHandler.post(new Runnable() {
                                 @Override
@@ -334,7 +320,7 @@ public class HttpEngine {
         String strRequest = JSON.toJSONString(baseRequest);
         FormBody.Builder formBody = new FormBody.Builder();
         JSONTokener jsonTokener = new JSONTokener(strRequest);
-        JSONObject jsonObject = null;
+        JSONObject jsonObject ;
         try {
             jsonObject = (JSONObject) jsonTokener.nextValue();
         } catch (JSONException e) {
@@ -387,6 +373,45 @@ public class HttpEngine {
         return formBody;
     }
 
+    public synchronized void cancel(Object tag,boolean isCancelRunningCalls){
+        if(mCalls == null)
+            mCalls = new ArrayList<>();
+        mCalls.clear();
+        Dispatcher dispatcher  = mOkHttpClient.dispatcher();
+        List<Call> queuedCalls = dispatcher.queuedCalls();
+        mCalls.addAll(queuedCalls);
+        if(isCancelRunningCalls){
+            List<Call> runningCalls = dispatcher.runningCalls();
+            mCalls.addAll(runningCalls);
+        }
+        for(Call call: mCalls){
+            if(call.request().tag().equals(tag)){
+                if(isCancelRunningCalls){
+                    call.cancel();
+                }else {
+                    if(!call.isExecuted())
+                        call.cancel();
+                }
+            }else{
+                Toast.makeText(MyApplication.getApplication(),"no call matches the tag",Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    public void cancelAll(boolean isCancelRunningCalls){
+        Dispatcher dispatcher = mOkHttpClient.dispatcher();
+        if(isCancelRunningCalls){
+            dispatcher.cancelAll();
+        }else {
+            List<Call> calls = dispatcher.queuedCalls();
+            for(Call call :calls)
+                if(!call.isExecuted())
+                    call.cancel();
+        }
+
+
+
+    }
     private static String bodyToString(RequestBody requestBody){
         try {
             okio.Buffer buffer = new okio.Buffer();
