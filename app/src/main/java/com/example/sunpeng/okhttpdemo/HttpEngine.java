@@ -94,7 +94,7 @@ public class HttpEngine {
         }
     }
 
-    private <T> void doGet(BaseRequest baseRequest, final Class<T> clazz, final HttpCallBack callBack) {
+    private <T> void doGet(final BaseRequest baseRequest, final Class<T> clazz, final HttpCallBack callBack) {
         HttpUrl.Builder urlBuilder = createHttpUrlBuilder(baseRequest);
         Request request = new Request.Builder().tag(baseRequest.getTag()).url(urlBuilder.build()).get().build();
         Call call = mOkHttpClient.newCall(request);
@@ -116,14 +116,18 @@ public class HttpEngine {
             public void onResponse(final Call call, final Response response) {
                 if (callBack != null) {
                     try {
-                        final String strResponse = response.body().string();
-                        Log.i("response::"+call.request().tag(), strResponse);
+                        String strResponse = response.body().string();
+                        if(baseRequest.isDecrypt()){
+                            strResponse = SysEncryptUtil.decryptDES(strResponse,"DES");
+                        }
+                        final String finalStrResponse = strResponse;
+                        Log.i("response::"+call.request().tag(), finalStrResponse);
                         mHandler.post(new Runnable() {
                             @Override
                             public void run() {
                                 if (response.isSuccessful()) {
                                     T object;
-                                    object = JSON.parseObject(strResponse, clazz);
+                                    object = JSON.parseObject(finalStrResponse, clazz);
                                     callBack.onSuccess(call, object);
                                 } else {
                                     callBack.onError(call, response.code() + ":" + response.message());
@@ -169,8 +173,8 @@ public class HttpEngine {
                         if(baseRequest.isDecrypt()){
                             strResponse = SysEncryptUtil.decryptDES(strResponse,"DES");
                         }
-                        Log.i("response::"+call.request().tag(), strResponse);
                         final String finalStrResponse = strResponse;
+                        Log.i("response::"+call.request().tag(), finalStrResponse);
                         mHandler.post(new Runnable() {
                             @Override
                             public void run() {

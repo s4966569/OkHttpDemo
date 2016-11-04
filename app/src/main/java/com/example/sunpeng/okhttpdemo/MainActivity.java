@@ -14,26 +14,16 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.annotation.JSONField;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
 import okhttp3.Call;
-import okhttp3.Callback;
 import okhttp3.MediaType;
-import okhttp3.MultipartBody;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
     private Context mContext;
-    private Button btn, btn_upload, btn_clear, btn_download,btn_cancel,btn_pause;
+    private Button btn_load, btn_upload, btn_clear, btn_download,btn_cancel,btn_pause;
     private TextView tv, tv_progress;
     private ProgressBar progressBar;
     public static final MediaType MEDIA_TYPE
@@ -62,7 +52,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         mContext = this;
         setContentView(R.layout.activity_main);
-        btn = (Button) findViewById(R.id.btn);
+        btn_load = (Button) findViewById(R.id.btn_load);
         tv = (TextView) findViewById(R.id.tv);
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
         tv_progress = (TextView) findViewById(R.id.tv_progress);
@@ -88,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        examRequest.setUrl(examUrl);
+        examRequest.setUrl(UrlReposity.getAbsoluteUrl(UrlReposity.ACTION_EXAM));
 //        examRequest.setRequestType(RequestType.POST);
         examRequest.setTag("exam");
         examRequest.setToken("7818ae7f832d5594f6641a2f09909610");
@@ -97,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
 
         submitQuestionRequest.setUrl(submitQUrl);
         submitQuestionRequest.setTag("submitQuestion");
+        submitQuestionRequest.setTag(UrlReposity.ACTION_EXAM);
         submitQuestionRequest.setOsType(osType);
         submitQuestionRequest.setPcode(pcode);
         submitQuestionRequest.setToken(token);
@@ -115,7 +106,7 @@ public class MainActivity extends AppCompatActivity {
         portraitUploadRequest.setRequestType(RequestType.POST);
         portraitUploadRequest.setTag("uploadPortrait");
         portraitUploadRequest.setFileToUpload(uploadFile);
-        portraitUploadRequest.setUrl(uploadUrl);
+        portraitUploadRequest.setUrl(UrlReposity.getAbsoluteUrl(UrlReposity.ACTION_UPLOAD_HEADER));
         portraitUploadRequest.setFileKey("newUpload");
         portraitUploadRequest.setToken("5372dd841e2ca489c6ec92c0dcc51fed");
         portraitUploadRequest.setWidth("80");
@@ -135,7 +126,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void initListener(){
 
-        btn.setOnClickListener(new View.OnClickListener() {
+        btn_load.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 tv.setText("");
@@ -171,7 +162,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 hasSetProgressMax=false;
-                HttpEngine.getInstance().invoke(portraitUploadRequest, null, new HttpCallBack<Object>() {
+                HttpEngine.getInstance().invoke(portraitUploadRequest, JSONObject.class, new HttpCallBack<JSONObject>() {
                     @Override
                     public void onError(Call call, String errorMsg) {
                         Log.i("error", errorMsg);
@@ -179,7 +170,7 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     @Override
-                    public void onSuccess(Call call, Object o) {
+                    public void onSuccess(Call call, JSONObject o) {
                         Toast.makeText(mContext,"上传成功！",Toast.LENGTH_SHORT).show();
                     }
                 });
