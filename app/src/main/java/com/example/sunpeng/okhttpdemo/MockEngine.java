@@ -27,7 +27,7 @@ public class MockEngine {
             Random random = new Random();
             boolean bSuccess = random.nextBoolean();
             if (bSuccess) {
-                //TODO call没处理 而且需要添加上随机错误概率
+                //TODO call没处理 没有模拟网络请求等待的情况
                 httpCallBack.onSuccess(null, t);
             } else {
                 //TODO call没处理
