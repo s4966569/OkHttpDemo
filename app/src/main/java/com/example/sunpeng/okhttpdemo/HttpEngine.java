@@ -94,7 +94,7 @@ public class HttpEngine {
         }
     }
 
-    private <T> void doGet(final BaseRequest baseRequest, final Class<T> clazz, final HttpCallBack callBack) {
+    private <T> void doGet(final BaseRequest baseRequest, final Class<T> clazz, final HttpCallBack<T> callBack) {
         HttpUrl.Builder urlBuilder = createHttpUrlBuilder(baseRequest);
         Request request = new Request.Builder().tag(baseRequest.getTag()).url(urlBuilder.build()).get().build();
         Call call = mOkHttpClient.newCall(request);
