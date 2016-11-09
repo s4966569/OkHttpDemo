@@ -412,9 +412,6 @@ public class HttpEngine {
                 if(!call.isExecuted())
                     call.cancel();
         }
-
-
-
     }
     private static String bodyToString(RequestBody requestBody){
         try {
