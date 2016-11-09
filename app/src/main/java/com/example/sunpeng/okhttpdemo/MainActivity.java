@@ -32,7 +32,8 @@ public class MainActivity extends AppCompatActivity {
     private String submitQUrl = "http://test.hwk.yanxiu.com/app/q/submitQ.do";
     private String quesListUrl = "http://test.hwk.yanxiu.com/app/personalData/getQuestionList.do";
     private String uploadUrl = "http://mobile.yanxiu.com/v20/api/resource/uploadheader";
-    private String ucUrl = "http://106.2.184.227:9999/wap3.ucweb.com/files/UCBrowser/zh-cn/999/UCBrowser_V11.1.0.870_android_pf145_(Build161012223751).apk?auth_key=1477648349-0-0-f7030bd113a4683c72480fafce14c9ba&vh=31b32982c17a91fb081019e19bbd54db&SESSID=478287a2d8f3c123957300e60dd127c6";
+//    private String ucUrl = "http://106.2.184.227:9999/wap3.ucweb.com/files/UCBrowser/zh-cn/999/UCBrowser_V11.1.0.870_android_pf145_(Build161012223751).apk?auth_key=1477648349-0-0-f7030bd113a4683c72480fafce14c9ba&vh=31b32982c17a91fb081019e19bbd54db&SESSID=478287a2d8f3c123957300e60dd127c6";
+    private String ucUrl = "http://106.2.184.230:9999/wap3.ucweb.com/files/UCBrowser/zh-cn/999/UCBrowser_V11.1.5.871_android_pf145_(Build161028102549).apk?auth_key=1479264762-0-0-2d7f1487317c0f752abbbd76a072b0ab&vh=220b7fe376c3b7b8eea9ee5a182a25b6&SESSID=3e1bd80905d87b4c07ffaf8f8faed2dd";
     private String osType = "0";
     private String pcode = "010110000";
     private String token = "e95dab459d35c9be935f39403ba8d8f2";
@@ -78,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+        FetchUserRequest request = new FetchUserRequest();
         examRequest.setUrl(UrlReposity.getAbsoluteUrl(UrlReposity.ACTION_EXAM));
 //        examRequest.setRequestType(RequestType.POST);
         examRequest.setTag("exam");
@@ -130,7 +132,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 tv.setText("");
-                HttpEngine.getInstance().invoke(examRequest, ExamResponse.class, new HttpCallBack<ExamResponse>() {
+                HttpManager.getInstance().invoke(examRequest, ExamResponse.class, new HttpCallBack<ExamResponse>() {
                     @Override
                     public void onError(Call call, String errorMsg) {
                         Log.i("error", errorMsg);
@@ -144,7 +146,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
-                HttpEngine.getInstance().invoke(questionListRequest, JSONObject.class, new HttpCallBack<JSONObject>() {
+                HttpManager.getInstance().invoke(questionListRequest, JSONObject.class, new HttpCallBack<JSONObject>() {
                     @Override
                     public void onError(Call call, String errorMsg) {
 
@@ -162,7 +164,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 hasSetProgressMax=false;
-                HttpEngine.getInstance().invoke(portraitUploadRequest, JSONObject.class, new HttpCallBack<JSONObject>() {
+                HttpManager.getInstance().invoke(portraitUploadRequest, JSONObject.class, new HttpCallBack<JSONObject>() {
                     @Override
                     public void onError(Call call, String errorMsg) {
                         Log.i("error", errorMsg);
@@ -208,7 +210,8 @@ public class MainActivity extends AppCompatActivity {
         btn_cancel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                HttpEngine.getInstance().cancel("downloadUc",false);
+                HttpEngine.getInstance().cancel("downloadUc",true);
+                HttpEngine.getInstance().cancel("uploadPortrait",true);
             }
         });
 

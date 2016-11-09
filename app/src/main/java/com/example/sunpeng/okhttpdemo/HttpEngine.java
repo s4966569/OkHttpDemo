@@ -377,7 +377,7 @@ public class HttpEngine {
         return formBody;
     }
 
-    public synchronized void cancel(Object tag,boolean isCancelRunningCalls){
+    public void cancel(Object tag,boolean isCancelRunningCalls){
         if(mCalls == null)
             mCalls = new ArrayList<>();
         mCalls.clear();
@@ -396,8 +396,6 @@ public class HttpEngine {
                     if(!call.isExecuted())
                         call.cancel();
                 }
-            }else{
-                Toast.makeText(MyApplication.getApplication(),"no call matches the tag",Toast.LENGTH_SHORT).show();
             }
         }
     }

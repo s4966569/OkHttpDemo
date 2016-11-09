@@ -26,4 +26,12 @@ public class HttpManager {
             HttpEngine.getInstance().invoke(baseRequest,responseClazz,httpCallBack);
         }
     }
+
+    public void cancel(Object tag,boolean isCancelRunningCalls) {
+        HttpEngine.getInstance().cancel(tag,isCancelRunningCalls);
+    }
+
+    public void cancelAll(boolean isCancelRunningCalls){
+        HttpEngine.getInstance().cancelAll(isCancelRunningCalls);
+    }
 }
