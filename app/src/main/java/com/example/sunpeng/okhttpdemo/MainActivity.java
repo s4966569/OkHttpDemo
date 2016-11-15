@@ -137,6 +137,8 @@ public class MainActivity extends AppCompatActivity {
                     public void onError(Call call, String errorMsg) {
                         Log.i("error", errorMsg);
                         tv.setText(errorMsg);
+
+                        examRequest.getToken();
                     }
 
                     @Override

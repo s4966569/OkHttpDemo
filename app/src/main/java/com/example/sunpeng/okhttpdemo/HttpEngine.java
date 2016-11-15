@@ -18,6 +18,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.GenericDeclaration;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -127,7 +129,8 @@ public class HttpEngine {
                             public void run() {
                                 if (response.isSuccessful()) {
                                     T object;
-                                    object = JSON.parseObject(finalStrResponse, clazz);
+//                                    Log.i("class",new ClassTypeGetter<T>().get().getSimpleName());
+                                    object = JSON.parseObject(finalStrResponse,clazz);
                                     callBack.onSuccess(call, object);
                                 } else {
                                     callBack.onError(call, response.code() + ":" + response.message());
